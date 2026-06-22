@@ -1,0 +1,227 @@
+import { TEmployee } from "@/types/employee"
+import { useEmployeeRoleData } from "@/features/settings/api";
+import EditFrom from "@/layouts/edit-from";
+import { Button } from "@/ui/button";
+import { Label } from "@/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/select";
+import { Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
+const SettingUserRoleForm = () => {
+  const { adminAndMods, employees } = useEmployeeRoleData();
+
+  const [loader, setLoader] = useState(false);
+  const [removedUsers, setRemovedUsers] = useState<Partial<TEmployee>[]>([]);
+
+  const initialData = useMemo(() => {
+    return adminAndMods
+      ? adminAndMods.map(({ id, name, role }) => ({ id, name, role }))
+      : [];
+  }, [adminAndMods]);
+
+  const handleSubmit = async (data: Partial<TEmployee>[]) => {
+    setLoader(true);
+    try {
+      const updates = [
+        ...data.map(({ id, role }) => ({
+          id: id || "",
+          role: role as TEmployee["role"],
+        })),
+        ...removedUsers.map(({ id }) => ({
+          id: id || "",
+          role: "user" as TEmployee["role"],
+        })),
+      ];
+
+      const res = await fetch("/api/employee/roles", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          updates: updates
+            .filter((item) => Boolean(item.id))
+            .map((item) => ({
+              id: item.id,
+              role: item.role as "user" | "moderator" | "admin",
+            })),
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update roles");
+      }
+
+      toast("Role update complete");
+    } catch {
+      toast("Something went wrong");
+    } finally {
+      setLoader(false);
+    }
+  };
+
+  return (
+    <EditFrom<Partial<TEmployee>[]>
+      isUpdating={loader}
+      data={initialData}
+      key={JSON.stringify(initialData)}
+      title="User Role"
+    >
+      {({ handleChange, isReadOnly, data, formRef }) => {
+        const handleDelete = (index: number) => {
+          const userToRemove = data[index];
+          if (userToRemove) {
+            setRemovedUsers((prev) => [
+              ...prev,
+              { ...userToRemove, role: "user" },
+            ]);
+            const updatedData = [...data];
+            updatedData.splice(index, 1);
+            handleChange(updatedData);
+          }
+        };
+
+        return (
+          <form
+            ref={formRef}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit(data);
+            }}
+          >
+            {data?.map((item, index) => (
+              <div
+                key={`user-${item.id}`}
+                className={`${isReadOnly ? "bg-white" : "bg-light px-5 pt-5 mb-5"} ${index !== 0 && isReadOnly ? "border-t border-border pt-5" : "rounded"} relative`}
+              >
+                {!isReadOnly && (
+                  <div className="absolute right-5 top-3">
+                    <Button
+                      type="button"
+                      size={"xs"}
+                      variant="outline"
+                      onClick={() => handleDelete(index)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                )}
+                <div className="row gx-3">
+                  <div className="lg:col-6 mb-4">
+                    <Label>Name:</Label>
+                    {isReadOnly ? (
+                      <small className="block capitalize">{item.name}</small>
+                    ) : (
+                      <Select
+                        value={item.name || ""}
+                        onValueChange={(value) => {
+                          const selectedEmployee = employees?.find(
+                            (employee) => employee.name === value,
+                          );
+                          handleChange(
+                            data.map((userRole, i) =>
+                              i === index
+                                ? {
+                                    ...userRole,
+                                    id: selectedEmployee?.id || "",
+                                    name: value,
+                                  }
+                                : userRole,
+                            ),
+                          );
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Name" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {employees
+                            ?.filter(
+                              (employee) =>
+                                !data.some(
+                                  (userRole, i) =>
+                                    userRole.name === employee.name &&
+                                    i !== index,
+                                ),
+                            )
+                            .map((employee) => (
+                              <SelectItem
+                                key={employee.id}
+                                value={employee.name}
+                              >
+                                {employee.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div className="lg:col-6 mb-4">
+                    <Label>Role:</Label>
+                    {isReadOnly ? (
+                      <small className="block capitalize">{item.role}</small>
+                    ) : (
+                      <Select
+                        value={item.role || ""}
+                        onValueChange={(value) =>
+                          handleChange(
+                            data.map((userRole, i) =>
+                              i === index
+                                ? {
+                                    ...userRole,
+                                    role: value as
+                                      | "user"
+                                      | "moderator"
+                                      | "admin",
+                                  }
+                                : userRole,
+                            ),
+                          )
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="moderator">Moderator</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!isReadOnly && (
+              <Button
+                variant="outline"
+                className="w-full mt-6"
+                type="button"
+                onClick={() => {
+                  handleChange([
+                    ...data,
+                    {
+                      id: `${data.length}-${Date.now()}`,
+                      name: "",
+                      role: "moderator",
+                    },
+                  ]);
+                }}
+              >
+                Add New
+              </Button>
+            )}
+          </form>
+        );
+      }}
+    </EditFrom>
+  );
+};
+
+export default SettingUserRoleForm;

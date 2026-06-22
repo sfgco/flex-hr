@@ -1,0 +1,43 @@
+import { useGetUpcomingHolidaysAndEventsQuery } from "@/features/calendar/api"
+import { type TEvent } from "@/types/calendar";
+import { dateFormat } from "@/lib/date-converter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
+import { CalendarCheck } from "lucide-react";
+
+const UpcomingEvents = () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = useGetUpcomingHolidaysAndEventsQuery(today);
+
+  return (
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle>
+          <CalendarCheck className="mr-2 inline-block" />
+          Upcoming Events
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="lg:h-75 scroll-box">
+        {data?.result?.events?.length === 0 ? (
+          <p className="text-text-light">No upcoming events</p>
+        ) : (
+          <ul className="space-y-3">
+            {data?.result?.events?.map((event: TEvent, index: number) => (
+              <li
+                className="bg-success/10 px-3 py-2 rounded"
+                key={`event-${index}`}
+              >
+                <p className="capitalize text-success block">{event.reason}</p>
+                <small className="text-text-light">
+                  {dateFormat(event.start_date!)} -{" "}
+                  {dateFormat(event.end_date!)}
+                </small>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default UpcomingEvents;

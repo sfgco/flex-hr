@@ -1,0 +1,205 @@
+"use client";
+
+import ConfirmationPopup from "@/components/confirmation-popup";
+import UserInfo from "@/components/user-info";
+import { useDeleteAssetMutation } from "@/features/asset/api";
+import { useDialog } from "@/hooks/use-dialog";
+import { dateFormat } from "@/lib/date-converter"
+import { useEmployeeMap } from "@/hooks/use-employee-map";
+import type { TAsset } from "@/types/asset";
+import { Button } from "@/ui/button";
+import { Dialog, DialogTrigger } from "@/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/ui/dropdown-menu";
+import { TableCell, TableRow } from "@/ui/table";
+import { Ellipsis } from "lucide-react";
+import Image from "next/image";
+import { memo, useMemo, useState } from "react";
+import { toast } from "sonner";
+import AssetPreview from "./asset-preview";
+import AssetUpdate from "./asset-update";
+
+const AssetPage = ({ asset }: { asset: TAsset[] }) => {
+  const [assetId, setAssetId] = useState<string>("");
+
+  return (
+    <>
+      {asset?.map((item) => (
+        <MemoizedAssetModal
+          assetId={assetId}
+          setAssetId={setAssetId}
+          key={item.asset_id}
+          item={item}
+        />
+      ))}
+    </>
+  );
+};
+
+export default AssetPage;
+
+const AssetModal = ({
+  item,
+  assetId,
+  setAssetId,
+}: {
+  item: TAsset;
+  assetId: string;
+  setAssetId: React.Dispatch<React.SetStateAction<string>>;
+}) => {
+  const { isDialogOpen, onDialogChange } = useDialog();
+  const employeeMap = useEmployeeMap();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Simulate fetching asset data
+  const singleAsset = useMemo(() => {
+    return assetId === item.asset_id ? item : null;
+  }, [assetId, item]);
+
+  const [deleteAsset] = useDeleteAssetMutation();
+
+  const handleAssetDelete = () => {
+    if (!item.asset_id) return;
+    deleteAsset(item.asset_id);
+    toast("Asset deleted complete");
+  };
+
+  const handleAction = (action: "preview" | "edit" | "delete") => {
+    if (!item?.asset_id) return;
+
+    setAssetId(item.asset_id);
+    setIsMenuOpen(false);
+
+    switch (action) {
+      case "preview":
+        setIsPreviewOpen(true);
+        break;
+      case "edit":
+        onDialogChange(true);
+        break;
+      case "delete":
+        setIsDeleteDialogOpen(true);
+        break;
+    }
+  };
+
+  return (
+    <>
+      <DropdownMenu
+        key={item.asset_id}
+        open={isMenuOpen}
+        onOpenChange={setIsMenuOpen}
+        modal={false}
+      >
+        <TableRow>
+          <TableCell>
+            <Dialog>
+              <DialogTrigger asChild>
+                <div
+                  className="flex items-center cursor-pointer"
+                  onClick={() => setAssetId(item?.asset_id!)}
+                >
+                  <Image
+                    src={`/images/assets/${item.type}.png`}
+                    alt={item.name}
+                    width={50}
+                    height={50}
+                    className="rounded-md border border-border mr-2 shrink-0"
+                  />
+                  <p className="mb-0 capitalize font-medium">{item.name}</p>
+                </div>
+              </DialogTrigger>
+              {singleAsset?.asset_id && (
+                <AssetPreview assetData={singleAsset!} />
+              )}
+            </Dialog>
+          </TableCell>
+          <TableCell>
+            <UserInfo user={employeeMap.get(item.user)} />
+          </TableCell>
+          <TableCell>{item.asset_id}</TableCell>
+          <TableCell>
+            {item.price} <span className="uppercase">{item.currency}</span>
+          </TableCell>
+          <TableCell>{dateFormat(item.purchase_date)}</TableCell>
+          <TableCell className="text-right">
+            <DropdownMenuTrigger>
+              <Ellipsis className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem className="p-0">
+                <Button
+                  className="w-full justify-start"
+                  variant={"ghost"}
+                  size={"sm"}
+                  onClick={() => handleAction("preview")}
+                >
+                  Preview
+                </Button>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="p-0">
+                <Button
+                  className="w-full justify-start"
+                  variant={"ghost"}
+                  size={"sm"}
+                  onClick={() => handleAction("edit")}
+                >
+                  Edit
+                </Button>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="p-0">
+                <Button
+                  className="w-full text-destructive hover:bg-destructive justify-start"
+                  variant={"ghost"}
+                  size={"sm"}
+                  onClick={() => handleAction("delete")}
+                >
+                  Delete
+                </Button>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </TableCell>
+        </TableRow>
+      </DropdownMenu>
+
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        {singleAsset?.asset_id && <AssetPreview assetData={singleAsset!} />}
+      </Dialog>
+
+      <Dialog
+        modal={true}
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          onDialogChange(open);
+          if (!open) {
+            setAssetId("");
+          }
+        }}
+      >
+        {singleAsset?.asset_id && (
+          <AssetUpdate asset={singleAsset!} onDialogChange={onDialogChange} />
+        )}
+      </Dialog>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        {singleAsset?.asset_id && (
+          <ConfirmationPopup
+            handleConfirmation={() => {
+              handleAssetDelete();
+              setIsDeleteDialogOpen(false);
+            }}
+            id={singleAsset?.asset_id!}
+          />
+        )}
+      </Dialog>
+    </>
+  );
+};
+
+const MemoizedAssetModal = memo(AssetModal);

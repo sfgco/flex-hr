@@ -1,0 +1,86 @@
+import { useAddCalendarMutation } from "@/features/calendar/api"
+import { type TCalendar } from "@/types/calendar";
+import { DialogContent, DialogTitle } from "@/ui/dialog";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import CalendarForm from "./calendar-form";
+
+const CalendarInsert = ({
+  onDialogChange,
+}: {
+  onDialogChange: (open: boolean) => void;
+}) => {
+  const [loader, setLoader] = useState(false);
+  const [calendarData, setCalendarData] = useState<TCalendar>({
+    year: new Date().getFullYear(),
+    holidays: [
+      {
+        start_date: undefined,
+        end_date: undefined,
+        day_count: 0,
+        reason: "",
+      },
+    ],
+    events: [
+      {
+        start_date: undefined,
+        end_date: undefined,
+        day_count: 0,
+        reason: "",
+      },
+    ],
+  });
+
+  const [addCalendar, { isSuccess, isError, error }] = useAddCalendarMutation();
+
+  const dialogContentRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setLoader(true);
+    try {
+      addCalendar(calendarData);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (isSuccess) {
+      setLoader(false);
+      setCalendarData({
+        year: new Date().getFullYear(),
+        holidays: [],
+        events: [],
+        createdAt: new Date(),
+      });
+      // close modal/dialog
+      onDialogChange(false);
+      toast("Calendar added complete");
+    } else if (isError) {
+      setLoader(false);
+      toast((error as any)?.data?.message || "Something went wrong");
+      console.log(error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess, isError]);
+
+  return (
+    <DialogContent ref={dialogContentRef} className="max-w-4xl!">
+      <DialogTitle className="mb-4">Add New Year Calendar</DialogTitle>
+
+      <div className="max-h-[90vh] overflow-y-auto pr-2">
+        <CalendarForm
+          calendarData={calendarData}
+          setCalendarData={setCalendarData}
+          handleSubmit={handleSubmit}
+          loader={loader}
+          formType="insert"
+          popoverContainer={dialogContentRef.current}
+        />
+      </div>
+    </DialogContent>
+  );
+};
+
+export default CalendarInsert;
