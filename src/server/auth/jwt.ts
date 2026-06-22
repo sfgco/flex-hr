@@ -43,7 +43,7 @@ const createToken = (
 
   return jwt.sign(enhancedPayload, secret, {
     expiresIn: expires ? expires : "24h",
-    issuer: "open-hr-backend",
+    issuer: "flex-hr-backend",
   } as SignOptions);
 };
 
@@ -55,7 +55,7 @@ const deleteToken = (token: string, secret: Secret): string => {
 
 const verifyToken = (token: string, secret: Secret): JwtPayload => {
   const decoded = jwt.verify(token, secret, {
-    issuer: "open-hr-backend",
+    issuer: "flex-hr-backend",
   }) as JwtPayload;
 
   if (!decoded.id || !decoded.role) {

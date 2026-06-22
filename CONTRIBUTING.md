@@ -4,8 +4,8 @@
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-org/open-hr.git
-cd open-hr-app
+git clone https://github.com/your-org/flex-hr.git
+cd flex-hr-app
 
 # Install dependencies
 pnpm install
@@ -21,6 +21,7 @@ pnpm dev
 ## Environment Variables
 
 See `.env.example` for all required variables. You need at minimum:
+
 - `MONGO_URI` — MongoDB connection string
 - `NEXTAUTH_SECRET` — random secret for NextAuth
 - `JWT_SECRET` — random secret for JWT tokens
