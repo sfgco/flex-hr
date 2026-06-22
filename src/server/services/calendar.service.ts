@@ -29,7 +29,9 @@ const buildWeekendObjects = (
       const cw = conditionalWeekends.find((c) => c.name === dayName);
       if (cw) {
         const firstDayOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
-        const weekNumber = Math.ceil((d.getDate() + firstDayOfMonth.getDay()) / 7);
+        const weekNumber = Math.ceil(
+          (d.getDate() + firstDayOfMonth.getDay()) / 7,
+        );
         if (cw.pattern.includes(weekNumber)) isWeekend = true;
       }
     }
@@ -57,10 +59,12 @@ export const getCalendarService = async (year: number) => {
   const calObj = calendar.toObject() as any;
 
   calObj.holidays = (calObj.holidays ?? []).sort(
-    (a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
+    (a: any, b: any) =>
+      new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
   );
   calObj.events = (calObj.events ?? []).sort(
-    (a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
+    (a: any, b: any) =>
+      new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
   );
 
   const { weekends, conditionalWeekends } = await getWeekendsFromSettings();
@@ -100,12 +104,14 @@ export const deleteCalendarService = async (year: string) => {
   return Calendar.findOneAndDelete({ year: Number(year) });
 };
 
-export const getUpcomingEventsAndHolidaysService = async (currentDate: Date) => {
+export const getUpcomingEventsAndHolidaysService = async (
+  currentDate: Date,
+) => {
   const year = currentDate.getFullYear();
   const nextMonth = new Date(currentDate);
   nextMonth.setDate(currentDate.getDate() + 30);
 
-  const calendar = await Calendar.findOne({ year }) as any;
+  const calendar = (await Calendar.findOne({ year })) as any;
   if (!calendar) return { holidays: [], events: [] };
 
   const inRange = (item: any) => {
