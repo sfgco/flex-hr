@@ -1,4 +1,8 @@
-import { apiRequest, createMutationHook, createQueryHook } from "@/lib/api-client";
+import {
+  apiRequest,
+  createMutationHook,
+  createQueryHook,
+} from "@/lib/api-client";
 import { TPagination } from "@/types";
 import type { TAllAssetsState, TAsset, TAssetState } from "@/types/asset";
 
@@ -39,12 +43,13 @@ export const useAddAssetMutation = createMutationHook<TAssetState, TAsset>(
   { invalidatesTags: ["asset"] },
 );
 
-export const useUpdateAssetMutation = createMutationHook<unknown, any>((data) =>
-  apiRequest({
-    url: `/asset/${data.asset_id}`,
-    method: "PATCH",
-    body: data,
-  }),
+export const useUpdateAssetMutation = createMutationHook<unknown, any>(
+  (data) =>
+    apiRequest({
+      url: `/asset/${data.asset_id}`,
+      method: "PATCH",
+      body: data,
+    }),
   { invalidatesTags: ["asset"] },
 );
 

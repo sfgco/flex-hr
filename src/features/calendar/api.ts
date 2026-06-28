@@ -1,5 +1,13 @@
-import { apiRequest, createMutationHook, createQueryHook } from "@/lib/api-client";
-import { TAllCalendarEvents, TCalendar, TCalendarState } from "@/types/calendar";
+import {
+  apiRequest,
+  createMutationHook,
+  createQueryHook,
+} from "@/lib/api-client";
+import {
+  TAllCalendarEvents,
+  TCalendar,
+  TCalendarState,
+} from "@/types/calendar";
 
 export const useGetCalendarsQuery = createQueryHook<TCalendarState, undefined>(
   () =>
@@ -13,34 +21,37 @@ export const useGetCalendarsQuery = createQueryHook<TCalendarState, undefined>(
 export const useGetCalendarQuery = createQueryHook<
   TCalendarState<TCalendar>,
   number
->((year) =>
-  apiRequest<TCalendarState<TCalendar>>({
-    url: `/calendar/${year}`,
-    method: "GET",
-  }),
+>(
+  (year) =>
+    apiRequest<TCalendarState<TCalendar>>({
+      url: `/calendar/${year}`,
+      method: "GET",
+    }),
   ["calendar"],
 );
 
 export const useGetUpcomingHolidaysAndEventsQuery = createQueryHook<
   TAllCalendarEvents,
   string
->((date) =>
-  apiRequest<TAllCalendarEvents>({
-    url: `/calendar/upcoming/${date}`,
-    method: "GET",
-  }),
+>(
+  (date) =>
+    apiRequest<TAllCalendarEvents>({
+      url: `/calendar/upcoming/${date}`,
+      method: "GET",
+    }),
   ["calendar"],
 );
 
 export const useAddCalendarMutation = createMutationHook<
   TCalendarState,
   TCalendar
->((data) =>
-  apiRequest<TCalendarState>({
-    url: `/calendar`,
-    method: "POST",
-    body: data,
-  }),
+>(
+  (data) =>
+    apiRequest<TCalendarState>({
+      url: `/calendar`,
+      method: "POST",
+      body: data,
+    }),
   { invalidatesTags: ["calendar"] },
 );
 
